@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ฝึกเขียนตามคำบอก (听写) - 发展汉语中级 1</title>
+    <!-- นำเข้า Tailwind CSS สำหรับความสวยงาม -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- นำเข้า Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- นำเข้าฟอนต์ Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif+SC:wght@500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .font-zh {
+            font-family: 'Noto Serif SC', serif;
+        }
+        
+        /* CSS สำหรับเอฟเฟกต์การพลิกการ์ด 3 มิติ */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        
+        /* การตั้งค่า Animation ของการ์ด */
+        .card-inner {
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        
+        /* ป้องกันการคลุมดำข้อความเมื่อดับเบิ้ลคลิกเร็วๆ */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-10 px-4">
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-slate-800 mb-2">
+            ฝึกเขียนตามคำบอก (听写)
+        </h1>
+        <p class="text-slate-600">
+            发展汉语中级 1 (บทที่ 6: 电梯里的1分27秒)
+        </p>
+    </div>
+
+    <!-- Progress และปุ่มสุ่ม -->
+    <div class="mb-6 flex items-center justify-between w-full max-w-md px-2">
+        <span class="text-sm font-medium text-slate-500 bg-white px-3 py-1 rounded-full shadow-sm border border-slate-100">
+            คำที่ <span id="current-count">1</span> / <span id="total-count">36</span>
+        </span>
+        <button onclick="randomizeCard()" class="text-sm font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1 rounded-full transition-colors flex items-center gap-1 active:scale-95">
+            <i data-lucide="shuffle" class="w-4 h-4"></i> สุ่มคำศัพท์
+        </button>
+    </div>
+
+    <!-- Card Container -->
+    <div class="relative w-full max-w-md h-80 perspective-1000 mb-8 cursor-pointer no-select group" onclick="toggleFlip()">
+        
+        <!-- Inner Card -->
+        <div id="flashcard-inner" class="card-inner w-full h-full relative transform-style-3d">
+            
+            <!-- ด้านหน้า (ฟังเสียงอย่างเดียว) -->
+            <div class="absolute w-full h-full backface-hidden bg-white rounded-3xl shadow-xl flex flex-col items-center justify-center p-8 border border-slate-100">
+                
+                <div class="text-slate-500 mb-6 text-lg font-medium">
+                    ฟังเสียงแล้วเขียนคำศัพท์
+                </div>
+
+                <!-- ปุ่มฟังเสียงหลัก -->
+                <button 
+                    onclick="speakCurrentWord(event)" 
+                    id="main-speak-btn"
+                    class="w-24 h-24 rounded-full flex items-center justify-center transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 active:scale-95"
+                    title="ฟังเสียงคำศัพท์">
+                    <i data-lucide="volume-2" class="w-12 h-12"></i>
+                </button>
+                
+                <!-- คำใบ้เล็กๆ ด้านล่าง -->
+                <div class="absolute bottom-6 flex items-center text-slate-300 gap-2 group-hover:text-indigo-400 transition-colors">
+                    <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+                    <span class="text-sm">แตะพื้นที่ว่างเพื่อดูเฉลย</span>
+                </div>
+            </div>
+
+            <!-- ด้านหลัง (เฉลย) -->
+            <div class="absolute w-full h-full backface-hidden bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl shadow-xl flex flex-col items-center justify-center p-8 text-white rotate-y-180">
+                
+                <div class="text-center flex flex-col items-center justify-center h-full w-full">
+                    <!-- ชนิดของคำ -->
+                    <span id="word-type" class="inline-block bg-white/20 px-3 py-1 rounded-full text-xs font-medium mb-2 backdrop-blur-sm">
+                        คำนาม
+                    </span>
+                    
+                    <!-- อักษรจีน -->
+                    <h2 id="word-zh" class="text-6xl font-bold mb-3 tracking-wider font-zh drop-shadow-md">
+                        秒
+                    </h2>
+                    
+                    <!-- พินอิน -->
+                    <h3 id="word-pinyin" class="text-2xl text-indigo-50 mb-5 font-medium bg-black/20 px-4 py-1.5 rounded-xl backdrop-blur-sm">
+                        miǎo
+                    </h3>
+
+                    <!-- คำแปลภาษาไทย -->
+                    <p id="word-th" class="text-lg md:text-xl leading-snug mt-2 border-t border-white/20 pt-4 w-full px-4">
+                        วินาที
+                    </p>
+                </div>
+
+                <!-- ปุ่มฟังเสียงซ้ำในหน้าเฉลย -->
+                <button 
+                    onclick="speakCurrentWord(event)"
+                    class="absolute top-6 right-6 p-2 bg-white/10 rounded-full hover:bg-white/30 transition-colors backdrop-blur-sm active:scale-95"
+                    title="ฟังเสียงอีกครั้ง">
+                    <i data-lucide="volume-2" class="w-6 h-6"></i>
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls (Previous, Flip, Next) -->
+    <div class="flex items-center gap-4 md:gap-6">
+        <button onclick="prevCard()" class="w-14 h-14 flex items-center justify-center bg-white text-slate-600 rounded-full shadow-md border border-slate-100 hover:bg-slate-50 hover:text-indigo-600 transition-all hover:scale-105 active:scale-95" aria-label="Previous card">
+            <i data-lucide="chevron-left" class="w-7 h-7"></i>
+        </button>
+
+        <button onclick="toggleFlip()" class="px-8 py-4 bg-indigo-600 text-white font-semibold rounded-full shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95 flex items-center gap-2">
+            <i data-lucide="rotate-cw" class="w-5 h-5"></i>
+            <span id="flip-btn-text">ดูเฉลย</span>
+        </button>
+
+        <button onclick="nextCard()" class="w-14 h-14 flex items-center justify-center bg-white text-slate-600 rounded-full shadow-md border border-slate-100 hover:bg-slate-50 hover:text-indigo-600 transition-all hover:scale-105 active:scale-95" aria-label="Next card">
+            <i data-lucide="chevron-right" class="w-7 h-7"></i>
+        </button>
+    </div>
+
+    <script>
+        // ข้อมูลคำศัพท์
+        const vocabData = [
+            { id: 1, zh: '秒', pinyin: 'miǎo', type: '量', th: 'วินาที' },
+            { id: 2, zh: '难受', pinyin: 'nánshòu', type: '形', th: 'รู้สึกไม่สบายใจ, ทรมาน' },
+            { id: 3, zh: '幸运', pinyin: 'xìngyùn', type: '形', th: 'โชคดี' },
+            { id: 4, zh: '令', pinyin: 'lìng', type: '动', th: 'ทำให้' },
+            { id: 5, zh: '陌生', pinyin: 'mòshēng', type: '形', th: 'แปลกหน้า, ไม่คุ้นเคย' },
+            { id: 6, zh: '打交道', pinyin: 'dǎ jiāodao', type: '动', th: 'คบค้าสมาคม, ติดต่อกัน' },
+            { id: 7, zh: '尤其', pinyin: 'yóuqí', type: '副', th: 'โดยเฉพาะอย่างยิ่ง' },
+            { id: 8, zh: '上司', pinyin: 'shàngsi', type: '名', th: 'เจ้านาย, ผู้บังคับบัญชา' },
+            { id: 9, zh: '遇见', pinyin: 'yùjiàn', type: '动', th: 'พบเจอ, บังเอิญเจอ' },
+            { id: 10, zh: '压力', pinyin: 'yālì', type: '名', th: 'ความกดดัน' },
+            { id: 11, zh: '包围', pinyin: 'bāowéi', type: '动', th: 'ล้อมรอบ, โอบล้อม' },
+            { id: 12, zh: '微微', pinyin: 'wēiwēi', type: '副', th: 'เล็กน้อย, นิดหน่อย' },
+            { id: 13, zh: '上升', pinyin: 'shàngshēng', type: '动', th: 'สูงขึ้น, เพิ่มขึ้น' },
+            { id: 14, zh: '部门', pinyin: 'bùmén', type: '名', th: 'แผนก, ฝ่าย' },
+            { id: 15, zh: '具体', pinyin: 'jùtǐ', type: '形', th: 'เป็นรูปธรรม, เฉพาะเจาะจง' },
+            { id: 16, zh: '调查', pinyin: 'diàochá', type: '名/动', th: 'สำรวจ, สืบสวน' },
+            { id: 17, zh: '支支吾吾', pinyin: 'zhīzhīwūwū', type: '成', th: 'พูดอ้ำๆ อึ้งๆ' },
+            { id: 18, zh: '汗', pinyin: 'hàn', type: '名', th: 'เหงื่อ' },
+            { id: 19, zh: '优先', pinyin: 'yōuxiān', type: '动', th: 'ได้รับสิทธิ์ก่อน, ความสำคัญอันดับแรก' },
+            { id: 20, zh: '身影', pinyin: 'shēnyǐng', type: '名', th: 'รูปร่าง, เงา' },
+            { id: 21, zh: '消失', pinyin: 'xiāoshī', type: '动', th: 'หายไป' },
+            { id: 22, zh: '走廊', pinyin: 'zǒuláng', type: '名', th: 'ระเบียง, ทางเดิน' },
+            { id: 23, zh: '嘘', pinyin: 'xū', type: '动', th: 'ถอนหายใจช้าๆ, เป่าลมออก' },
+            { id: 24, zh: '屏', pinyin: 'bǐng', type: '动', th: 'กลั้น (เช่น กลั้นหายใจ)' },
+            { id: 25, zh: '仅仅', pinyin: 'jǐnjǐn', type: '副', th: 'เพียงแค่' },
+            { id: 26, zh: '宁可', pinyin: 'nìngkě', type: '副', th: 'ยอม...ดีกว่า' },
+            { id: 27, zh: '遭遇', pinyin: 'zāoyù', type: '动', th: 'เผชิญหน้า, ประสบ' },
+            { id: 28, zh: '气喘吁吁', pinyin: 'qìchuǎn xūxū', type: '成', th: 'หอบแฮ่กๆ, หายใจหอบ' },
+            { id: 29, zh: '以为', pinyin: 'yǐwéi', type: '动', th: 'นึกว่า, เข้าใจว่า (ในสิ่งที่ผิด)' },
+            { id: 30, zh: '难熬', pinyin: 'nán\'áo', type: '形', th: 'ทนได้ยาก, ทรมาน' },
+            { id: 31, zh: '机灵', pinyin: 'jīling', type: '形', th: 'ฉลาด, ไหวพริบดี' },
+            { id: 32, zh: '害羞', pinyin: 'hàixiū', type: '形', th: 'อาย, เขินอาย' },
+            { id: 33, zh: '等候', pinyin: 'děnghòu', type: '动', th: 'รอคอย' },
+            { id: 34, zh: '呼吸', pinyin: 'hūxī', type: '动', th: 'หายใจ' },
+            { id: 35, zh: '精彩', pinyin: 'jīngcǎi', type: '形', th: 'ยอดเยี่ยม, น่าตื่นตาตื่นใจ' },
+            { id: 36, zh: '鼓励', pinyin: 'gǔlì', type: '名/动', th: 'ให้กำลังใจ, สนับสนุน' }
+        ];
+
+        // ตัวแปรสถานะ
+        let currentIndex = 0;
+        let isFlipped = false;
+        
+        // ฟังก์ชันแปลงตัวย่อชนิดของคำเป็นภาษาไทยเต็ม
+        function getTypeName(typeShort) {
+            const types = {
+                '名': 'คำนาม',
+                '动': 'คำกริยา',
+                '形': 'คำคุณศัพท์',
+                '副': 'คำกริยาวิเศษณ์',
+                '量': 'ลักษณนาม',
+                '成': 'สำนวน',
+                '名/动': 'คำนาม / กริยา'
+            };
+            return types[typeShort] || typeShort;
+        }
+
+        // อัปเดตหน้าจอเมื่อเปลี่ยนคำศัพท์
+        function updateUI() {
+            const vocab = vocabData[currentIndex];
+            
+            // อัปเดตตัวเลข
+            document.getElementById('current-count').textContent = currentIndex + 1;
+            document.getElementById('total-count').textContent = vocabData.length;
+            
+            // อัปเดตข้อมูลด้านหลังการ์ด
+            document.getElementById('word-zh').textContent = vocab.zh;
+            document.getElementById('word-pinyin').textContent = vocab.pinyin;
+            document.getElementById('word-th').textContent = vocab.th;
+            document.getElementById('word-type').textContent = getTypeName(vocab.type);
+            
+            // ถ้าการ์ดถูกพลิกอยู่ ให้พลิกกลับมาหน้าฟังเสียงก่อน
+            if (isFlipped) {
+                isFlipped = false;
+                updateFlipState();
+            }
+        }
+
+        // ฟังก์ชันพลิกการ์ด
+        function toggleFlip() {
+            isFlipped = !isFlipped;
+            updateFlipState();
+        }
+
+        function updateFlipState() {
+            const cardInner = document.getElementById('flashcard-inner');
+            const btnText = document.getElementById('flip-btn-text');
+            
+            if (isFlipped) {
+                cardInner.classList.add('rotate-y-180');
+                btnText.textContent = 'กลับไปฟังเสียง';
+            } else {
+                cardInner.classList.remove('rotate-y-180');
+                btnText.textContent = 'ดูเฉลย';
+            }
+        }
+
+        // ฟังก์ชันเปลี่ยนคำถัดไป / ก่อนหน้า / สุ่ม
+        function nextCard() {
+            currentIndex = (currentIndex === vocabData.length - 1) ? 0 : currentIndex + 1;
+            updateUI();
+        }
+
+        function prevCard() {
+            currentIndex = (currentIndex === 0) ? vocabData.length - 1 : currentIndex - 1;
+            updateUI();
+        }
+
+        function randomizeCard() {
+            let newIndex = currentIndex;
+            // สุ่มจนกว่าจะได้คำที่ไม่ใช่คำปัจจุบัน (ถ้าเป็นไปได้)
+            while(newIndex === currentIndex && vocabData.length > 1) {
+                newIndex = Math.floor(Math.random() * vocabData.length);
+            }
+            currentIndex = newIndex;
+            updateUI();
+        }
+
+        // ฟังก์ชันอ่านออกเสียง (Text-to-Speech)
+        function speakCurrentWord(event) {
+            // หยุด Event เพื่อไม่ให้ไปทริกเกอร์การคลิกพลิกการ์ด (event bubbling)
+            if (event) {
+                event.stopPropagation(); 
+            }
+            
+            const textToSpeak = vocabData[currentIndex].zh;
+            
+            if ('speechSynthesis' in window) {
+                // ยกเลิกเสียงที่กำลังพูดอยู่ (ถ้ามี)
+                window.speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                
+                // ตั้งค่าให้อ่านเป็นภาษาจีน
+                utterance.lang = 'zh-CN'; 
+                // ปรับความเร็ว 0.7 ให้อ่านช้าลงชัดๆ สำหรับการเขียนตามคำบอก
+                utterance.rate = 0.7;     
+                
+                // ทำ Effect ปุ่มกระพริบตอนกำลังพูด
+                const mainBtn = document.getElementById('main-speak-btn');
+                if (mainBtn && !isFlipped) {
+                    mainBtn.classList.remove('bg-indigo-600', 'text-white');
+                    mainBtn.classList.add('bg-indigo-100', 'text-indigo-700', 'scale-95');
+                    
+                    utterance.onend = function() {
+                        mainBtn.classList.remove('bg-indigo-100', 'text-indigo-700', 'scale-95');
+                        mainBtn.classList.add('bg-indigo-600', 'text-white');
+                    };
+                }
+                
+                window.speechSynthesis.speak(utterance);
+            } else {
+                // แทนที่ alert() ด้วยการแสดงผลแบบอื่น ตามกฎที่ให้ไว้
+                console.error("เบราว์เซอร์ของคุณไม่รองรับระบบอ่านออกเสียง (Web Speech API)");
+                const errorMsg = document.createElement('div');
+                errorMsg.className = "fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-md z-50";
+                errorMsg.innerHTML = "<strong>ขออภัย!</strong> เบราว์เซอร์ของคุณไม่รองรับระบบอ่านออกเสียง";
+                document.body.appendChild(errorMsg);
+                setTimeout(() => errorMsg.remove(), 4000);
+            }
+        }
+
+        // เพิ่ม Keyboard Shortcuts (ลูกศรซ้าย-ขวา เพื่อเปลี่ยนคำ, Spacebar เพื่อพลิก)
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'ArrowRight') {
+                nextCard();
+            } else if (event.key === 'ArrowLeft') {
+                prevCard();
+            } else if (event.key === ' ' || event.key === 'Spacebar') {
+                event.preventDefault(); // ป้องกันหน้าเลื่อนลง
+                toggleFlip();
+            }
+        });
+
+        // Initialize Icons and First Card when page loads
+        window.onload = function() {
+            lucide.createIcons();
+            updateUI();
+        };
+    </script>
+</body>
+</html>
